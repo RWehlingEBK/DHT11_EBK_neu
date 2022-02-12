@@ -1,6 +1,6 @@
 /*
  * DHT11_ITAS2022.c
- *
+ * Version 2
  * Author : RalfW
  */ 
 
