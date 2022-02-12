@@ -41,12 +41,11 @@ DHT11DDR =(1<<DHT11PWR);
 DHT11PORT=(1<<DHT11PWR); 	
 }
 
-//Damit ich erkennen kann welche Daten empfangen wurden
+//Damit wir erkennen welche Daten empfangen wurden
 void initDHT11Debug()
 {
 	//Datenrichtung setzen
 	DHT11DDR =(1<<DEBUG_RESPONSE) | (1<<DEBUG_0) | (1<<DEBUG_1);
-	//Pin auf 5V schalten mit dem Port Register
 }
 
 void DHT11DebugToggle (uint8_t val)
