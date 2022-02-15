@@ -8,6 +8,7 @@
 #define F_CPU 11059280
 #include <util/delay.h>
 
+//###############################################################
 #define DHT11DDR	DDRA
 #define DHT11PORT	PORTA
 #define DHT11PIN	PINB
@@ -15,14 +16,10 @@
 #define DHT11DATA	PINB6
 
 
-#define DHT11TX	1
-#define DHT11RX	0
-
-#define DHT11HIGH 1
-#define DHT11LOW  0
 
 //###############################################################
 //Zum Debuggen
+
 #define DEBUGPORT	PORTD
 #define DEBUGDDR	DDRD
 #define DEBUGPIN	PIND
@@ -33,45 +30,60 @@
 //###############################################################
 
 
+
+#define DHT11TX	1
+#define DHT11RX	0
+
+#define DHT11HIGH 1
+#define DHT11LOW  0
+
+#define DHT11_18000US 18000
+
+
 void initDHT11()
 {
-//Datenrichtung setzen
-DHT11DDR =(1<<DHT11PWR);
-//Pin auf 5V schalten mit dem Port Register
-DHT11PORT=(1<<DHT11PWR); 	
+//Datenrichtung für die Versorgung des DHT11 setzen
+DHT11DDR |=(1<<DHT11PWR);
+//Ausgang auf 5V setzen für die Versorgung des DHT11
+DHT11PORT|=(1<<DHT11PWR); 	
 }
 
-//Damit wir erkennen welche Daten empfangen wurden
+//Ausgänge um zu erkennen welche Daten wir empfangen
 void initDHT11Debug()
 {
-	//Datenrichtung setzen
-	DHT11DDR =(1<<DEBUG_RESPONSE) | (1<<DEBUG_0) | (1<<DEBUG_1);
+//Datenrichtung setzen
+DEBUGDDR |=(1<<DEBUG_RESPONSE) | (1<<DEBUG_0) | (1<<DEBUG_1);
 }
 
 void DHT11DebugToggle (uint8_t val)
 {
-DHT11PIN =val?(1<<DEBUG_1):(1<<DEBUG_0);	
+//Beschreiben des PIN Registers bewirkt ein Umkippen des jeweiligen Bits
+DEBUGPIN =val?(1<<DEBUG_1):(1<<DEBUG_0);	
+};
+
+void DHT11ResponseToggle ()
+{
+	//Beschreiben des PIN Registers bewirkt ein Umkippen des DEBUG_RESPONSE Bits
+	DEBUGPIN =1<<DEBUG_RESPONSE;
 };
 
 
-void setDataDirection(uint8_t output)
+void setDataPinDirection(uint8_t output)
 {
 if (output) 
 	//Datenrichtung für Data auf 1 setzen TX
 	DHT11DDR |=(1<<DHT11DATA);				
-	//DHT11DDR |= (1<<DHT11DATA);	gleichwertig 
 	else
 	//Datenrichtung für Data auf 0 setzen RX
 	DHT11DDR &=~(1<<DHT11DATA);
 }
 
 
-void setDatapin(uint8_t high)
+void setDataPinLevel(uint8_t high)
 {
 	if (high)
 	//Output auf high setzen
 	DHT11PORT |=(1<<DHT11DATA);
-	//DHT11DDR |= (1<<DHT11DATA);	gleichwertig
 	else
 	//Output auf low setzen
 	DHT11PORT &=~(1<<DHT11DATA);
@@ -79,11 +91,11 @@ void setDatapin(uint8_t high)
 
 void startDHT11()
 {
-setDataDirection(DHT11TX);
-setDatapin(DHT11LOW);
-_delay_us(18000);
-setDatapin(DHT11HIGH);
-setDataDirection(DHT11RX);
+setDataPinDirection(DHT11TX);
+setDataPinLevel(DHT11LOW);
+_delay_us(DHT11_18000US);
+setDataPinLevel(DHT11HIGH);
+setDataPinDirection(DHT11RX);
 }
 
 
