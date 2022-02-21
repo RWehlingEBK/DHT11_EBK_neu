@@ -10,9 +10,9 @@
 
 #define DHT11DDR	DDRA
 #define DHT11PORT	PORTA
-#define DHT11PIN	PINB
-#define DHT11PWR	PINB5
-#define DHT11DATA	PINB6
+#define DHT11PIN	PINA
+#define DHT11PWR	PINA5
+#define DHT11DATA	PINA6
 
 
 #define DHT11TX	1
@@ -57,11 +57,11 @@ DHT11PIN =val?(1<<DEBUG_1):(1<<DEBUG_0);
 void setDataDirection(uint8_t output)
 {
 if (output) 
-	//Datenrichtung für Data auf 1 setzen TX
+	//Datenrichtung fÃ¼r Data auf 1 setzen TX
 	DHT11DDR |=(1<<DHT11DATA);				
 	//DHT11DDR |= (1<<DHT11DATA);	gleichwertig 
 	else
-	//Datenrichtung für Data auf 0 setzen RX
+	//Datenrichtung fÃ¼r Data auf 0 setzen RX
 	DHT11DDR &=~(1<<DHT11DATA);
 }
 
