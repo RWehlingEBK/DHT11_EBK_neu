@@ -42,13 +42,13 @@
 
 void initDHT11()
 {
-//Datenrichtung f�r die Versorgung des DHT11 setzen
+//Datenrichtung für die Versorgung des DHT11 setzen
 DHT11DDR |=(1<<DHT11PWR);
-//Ausgang auf 5V setzen f�r die Versorgung des DHT11
+//Ausgang auf 5V setzen für die Versorgung des DHT11
 DHT11PORT|=(1<<DHT11PWR); 	
 }
 
-//Ausg�nge um zu erkennen welche Daten wir empfangen
+//Ausgänge um zu erkennen welche Daten wir empfangen
 void initDHT11Debug()
 {
 //Datenrichtung setzen
@@ -71,10 +71,10 @@ void DHT11ResponseToggle ()
 void setDataPinDirection(uint8_t output)
 {
 if (output) 
-	//Datenrichtung für Data auf 1 setzen TX
+	//Datenrichtung fÃ¼r Data auf 1 setzen TX
 	DHT11DDR |=(1<<DHT11DATA);				
 	else
-	//Datenrichtung für Data auf 0 setzen RX
+	//Datenrichtung fÃ¼r Data auf 0 setzen RX
 	DHT11DDR &=~(1<<DHT11DATA);
 }
 
@@ -97,6 +97,36 @@ _delay_us(DHT11_18000US);
 setDataPinLevel(DHT11HIGH);
 setDataPinDirection(DHT11RX);
 }
+
+uint8_t decodeSignal()
+{
+
+	uint16_t time_out=65000;
+	
+	//warten bis das Signal 0 wird
+	while(recvPinHigh())
+	{
+		if(time_out-- ==0)
+		return 	DHT_NO_RESPONSE;
+	};
+	//warten bis das Signal 1 wird
+	while(!recvPinHigh())
+	{
+		if(time_out-- ==0)
+		return 	DHT_NO_RESPONSE;
+	};
+	_delay_us(26);
+	if(!recvPinHigh()) return DHT_RESPONSE_0;//26-28us  17us
+	
+	_delay_us(71-26);
+	if(!recvPinHigh()) return DHT_RESPONSE_1;//70us   49us gemessen
+	
+	_delay_us(88-71);
+	if(!recvPinHigh()) return DHT_RESPONSE_START;//80us 61us gemessen
+	
+return DHT_NO_RESPONSE;
+}
+
 
 
 int main(void)
