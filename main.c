@@ -15,7 +15,12 @@
 #define DHT11PWR	PINA5
 #define DHT11DATA	PINA6
 
-
+#define DHT_RESPONSE_START		2
+#define DHT_RESPONSE_0			0
+#define DHT_RESPONSE_1			1
+#define DHT_NO_RESPONSE			3
+#define DHT_TELEGRAM_BYTES		5
+#define DHT_TELEGRAM_HIGH_BIT  39
 
 //###############################################################
 //Zum Debuggen
