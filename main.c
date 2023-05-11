@@ -7,7 +7,7 @@
 #include <avr/io.h>
 
 #include <util/delay.h>
-#include "lcd-routines.h"
+#include "C:\Users\RalfW\OneDrive - Emschertal-Berufskolleg der Stadt Herne\Atmel\myLib\Schule\lcd-routines.h"
 
 //###############################################################
 #define DHT11DDR	DDRA
@@ -16,6 +16,7 @@
 
 #define DHT11PWR	PINB5
 #define DHT11DATA	PINB6
+#define HIGHTEMPERATURE 2
 
 
 
@@ -35,6 +36,7 @@
 #define DHT_RESPONSE_0			0
 #define DHT_RESPONSE_1			1
 #define DHT_NO_RESPONSE			3
+#define DHT_ERROR				4
 #define DHT_TELEGRAM_BYTES		5
 #define DHT_TELEGRAM_HIGH_BIT  39
 
@@ -60,13 +62,13 @@ void debugvalue(uint8_t wert)
 
 void initDHT11()
 {
-//Datenrichtung fÃ¼r die Versorgung des DHT11 setzen
+//Datenrichtung für die Versorgung des DHT11 setzen
 DHT11DDR |=(1<<DHT11PWR);
-//Ausgang auf 5V setzen fÃ¼r die Versorgung des DHT11
+//Ausgang auf 5V setzen für die Versorgung des DHT11
 DHT11PORT|=(1<<DHT11PWR); 	
 }
 
-//AusgÃ¤nge um zu erkennen welche Daten wir empfangen
+//Ausgänge um zu erkennen welche Daten wir empfangen
 void initDHT11Debug()
 {
 //Datenrichtung setzen
@@ -89,10 +91,10 @@ void DHT11ResponseToggle ()
 void setDataPinDirection(uint8_t output)
 {
 if (output) 
-	//Datenrichtung fÃ¼r Data auf 1 setzen TX
+	//Datenrichtung für Data auf 1 setzen TX
 	DHT11DDR |=(1<<DHT11DATA);				
 	else
-	//Datenrichtung fÃ¼r Data auf 0 setzen RX
+	//Datenrichtung für Data auf 0 setzen RX
 	DHT11DDR &=~(1<<DHT11DATA);
 }
 
@@ -116,107 +118,99 @@ setDataPinLevel(DHT11HIGH);
 setDataPinDirection(DHT11RX);
 }
 
-//liefert wahr zurÃ¼ck wenn das signal auf dem IO-Pin high ist
+//liefert wahr zurück wenn das signal auf dem IO-Pin high ist
 uint8_t recvPinHigh()
 {
 	return DHT11PIN & (1<< DHT11DATA);
 }
 
 
-uint8_t decodeSignal_alt()
+
+uint8_t detectResponse()
 {
-	uint8_t t_high=0;
-	uint8_t t_low=0;
-	uint16_t time_out=65000;
+
+	_delay_us(14/2); // Zeitliche Hälfte des Impulses
 	
-	//warten bis das Signal 0 wird
+	if (!recvPinHigh()) return DHT_NO_RESPONSE;
+	_delay_us(14/2+83/2); // Zeitliche Hälfte des Impulses		
+	
+	if (recvPinHigh()) 	return DHT_NO_RESPONSE;			
+	_delay_us(83/2+88/2);     // Zeitliche Hälfte des Impulses
+	
+	if (!recvPinHigh()) return DHT_NO_RESPONSE;
+	//_delay_us(88/2);
+
+return DHT_RESPONSE_START;
+}
+
+
+uint8_t detectBit()
+{
+	uint8_t time =0;
+	//auf low warten
+	while(recvPinHigh());
+	//auf high warten
+	while(!recvPinHigh());
+
 	while(recvPinHigh())
 		{
-
-		if(time_out-- ==0) 
-							return 	DHT_NO_RESPONSE;
-		};
-	//Zeit messen wie lange das Signal 0 ist
-	while(!recvPinHigh())
-	{
-		t_low++;
-		_delay_us(1);
-	}
-
-	//Zeit messen wie lange das Signal 1 ist
-	while(recvPinHigh())
-	{
-		t_high++;
-		_delay_us(1);
-	}
-	//debugtime(t_high);
-	if(t_high > 50)				//80us 61us gemessen
-	return DHT_RESPONSE_START;	//
-
-	if(t_high > 40)
-	
-	return DHT_RESPONSE_1;		//70us   49us gemessen
-	//debugtime(t_high);
-	return DHT_RESPONSE_0;		//26-28us  17us
-}
-uint8_t decodeSignalSchule()
-{
-	//warten bis das Signal 0 wird
-	while(DHT11PIN & (1<< DHT11DATA));
-	//warten bis das Signal 1 wird
-	while(!(DHT11PIN & (1<< DHT11DATA)));
-	_delay_us(26);
-	if(!(DHT11PIN & (1<< DHT11DATA)))
-		return 0;
-	_delay_us(44);	
-	if(!(DHT11PIN & (1<< DHT11DATA)))
-		return 1;
-	_delay_us(10);		
-	return 3;
-
-}
-uint8_t decodeSignal()
-{
-
-	uint16_t time_out=65000;
-	
-	//warten bis das Signal 0 wird
-	while(recvPinHigh())
-	{
-		if(time_out-- ==0)
-		return 	DHT_NO_RESPONSE;
-	};
-	//warten bis das Signal 1 wird
-	while(!recvPinHigh())
-	{
-		if(time_out-- ==0)
-		return 	DHT_NO_RESPONSE;
-	};
-	_delay_us(26);
-	if(!recvPinHigh()) return DHT_RESPONSE_0;//26-28us  17us
-	
-	_delay_us(71-26);
-	if(!recvPinHigh()) return DHT_RESPONSE_1;//70us   49us gemessen
-	
-	_delay_us(88-71);
-	if(!recvPinHigh()) return DHT_RESPONSE_START;//80us 61us gemessen
-	
-return DHT_NO_RESPONSE;
-}
-
-void DHT11getData( uint8_t * werte)
-{
-uint8_t bitwert;
-	for (uint8_t i=0;i<40;i++)
-		{
-			bitwert=decodeSignal();
-			//if(!((i/8)%2))
-			DHT11DebugToggle(bitwert);
-			
-			if (bitwert==1)
-				werte[i/8]|=0b10000000 >>(i%8);//werte[i/8]|=(bitwert==1?1:0)<<(i%8);
+		time++;
+		_delay_us(1);	
 		}
+		return time>30?1:0;
+}
 
+
+void showValues(uint8_t * werte)
+{
+		for (int i=0;i<5;i++)
+				{	
+				lcd_int(werte[i]);
+				lcd_string(" ");
+				}
+	uint8_t summe=0;
+		for (int i=0;i<4;i++)
+		{
+			summe+=werte[i];
+		}			
+		lcd_int(summe);			
+				
+		debugvalue(werte[HIGHTEMPERATURE]);	
+		//while(1);	
+				
+		_delay_ms(2000);
+		debugvalue(0);
+		_delay_ms(2000);	
+}
+
+uint8_t getDHT11Values(uint8_t * werte)
+{
+//Löschen des Datenfeldes
+for (int i=0;i<5;i++)
+		werte[i]=0;	
+	
+startDHT11();
+	
+
+		if(detectResponse()==DHT_RESPONSE_START)
+		{
+		DHT11ResponseToggle ();
+
+		for (uint8_t i=0;i<40;i++)
+			{
+			uint8_t bitwert=detectBit();
+				
+				DHT11DebugToggle(bitwert);
+				
+				if (bitwert==1)
+					werte[i/8] |=0b10000000 >>(i%8);
+			}
+			
+		return DHT_RESPONSE_START;	
+		
+		}
+		
+return DHT_ERROR;		
 }
 
 int main(void)
@@ -227,43 +221,21 @@ lcd_init();
 lcd_clear();
 lcd_string("Start");
 _delay_ms(1000);
-uint8_t bitwert;
+
 uint8_t werte[5];
 
     /* Replace with your application code */
     while (1) 
     {
-	for (int i=0;i<5;i++)
-		werte[i]=0;	
-	startDHT11();
-	
-
-					
-		if(decodeSignal()==DHT_RESPONSE_START)
-		{
-		DHT11ResponseToggle ();
-
-		DHT11getData(werte);
-		}
-	lcd_clear();
-
-	
-		
-	for (int i=0;i<5;i++)
-			{	
-			lcd_int(werte[i]);
-			lcd_string(" ");
-			}
-uint8_t summe=0;
-	for (int i=0;i<4;i++)
+	if (getDHT11Values(werte)==DHT_RESPONSE_START)
 	{
-		summe+=werte[i];
+	lcd_clear();	
+	showValues(werte);
+	}
 
-	}			
-lcd_int(summe);			
-			
-	debugvalue(werte[2]);	
-	_delay_ms(5000);
+	_delay_ms(50);	
+
+
     }
 }
 
